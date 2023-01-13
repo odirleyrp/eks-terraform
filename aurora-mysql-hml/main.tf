@@ -1,8 +1,8 @@
 locals {
   common_tags = {
     Ambiente          = "HML"
-    Projeto           = "EHUB"
-    "Tipo de Capital" = "CAPEX"
+    Projeto           = "BMG-DB"
+    "Tipo de Capital" = "AWS"
     Terraform         = true
   }
 }
@@ -43,7 +43,7 @@ resource "aws_security_group_rule" "allow_access" {
 }
 
 module "aurora" {
-  source                = "git::git@ssh.dev.azure.com:v3/bbce0256/Infra%20as%20Code%20-%20BBCE/postgress-serverless"
+  source                = "./module/aurora-serverles"
   name                  = "ehub-aurora-mysql-hml"
   engine                = "aurora"
   engine_mode           = "serverless"
