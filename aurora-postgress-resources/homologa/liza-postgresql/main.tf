@@ -27,7 +27,7 @@ data aws_subnet_ids private {
 # RDS Aurora
 #############
 module "aurora" {
-  source                          = "git::https://bbce0256.visualstudio.com/Infra%20as%20Code%20-%20BBCE/_git/postgress-serverless"
+  source                          = ""
   name                            = "goliza-db-hml"
   engine                          = "aurora-postgresql"
   engine_version                  = "13.6"
