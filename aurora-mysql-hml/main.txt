@@ -1,0 +1,76 @@
+locals {
+  name         = "bbce-balcao-rds-hml"
+  common_tags  = {
+    Ambiente          = "HML"
+    Projeto           = "Balcao"
+    "Tipo de Capital" = "CAPEX"
+    Terraform         = true
+  }
+}
+
+data aws_vpc vpc {
+  filter {
+    name   = "tag:Name"
+    values = ["vpc-balcao"]
+  }
+}
+
+data aws_subnet_ids private {
+  vpc_id = data.aws_vpc.vpc.id
+
+  tags   = {
+    Type = "private"
+  }
+}
+
+resource random_password master {
+  length = 12
+}
+
+module rds_balcao {
+  source = "git::git@ssh.dev.azure.com:v3/bbce0256/Infra%20as%20Code%20-%20BBCE/aurora-rds?ref=v0.0.1"
+
+  name                                = local.name
+  engine                              = "aurora-mysql"
+  engine_version                      = "5.7.mysql_aurora.2.07.2"
+  instance_type                       = "db.t3.medium"
+  instance_type_replica               = "db.t3.medium"
+  database_name                       = "api_balcao"
+
+  vpc_id                              = data.aws_vpc.vpc.id
+  db_subnet_group_name                = local.name
+  subnets                             = data.aws_subnet_ids.private.ids
+  create_security_group               = true
+  allowed_cidr_blocks                 = [data.aws_vpc.vpc.cidr_block, "10.7.0.0/16", "10.87.0.0/16"]
+
+  replica_count                       = 1
+  iam_database_authentication_enabled = false
+  password                            = random_password.master.result
+  create_random_password              = false
+
+  apply_immediately                   = true
+  skip_final_snapshot                 = true
+  preferred_backup_window             = "05:00-06:00"
+  preferred_maintenance_window        = "sun:06:00-sun:07:00"
+  backup_retention_period             = 7
+  
+  db_parameter_group_name             = aws_db_parameter_group.this.id
+  db_cluster_parameter_group_name     = aws_rds_cluster_parameter_group.this.id
+  enabled_cloudwatch_logs_exports     = ["audit", "error", "general", "slowquery"]
+
+  tags                                = merge(local.common_tags)
+}
+
+resource aws_db_parameter_group this {
+  name        = "${local.name}-aurora-db-57-parameter-group"
+  family      = "aurora-mysql5.7"
+  description = "${local.name}-aurora-db-57-parameter-group"
+  tags        = merge(local.common_tags)
+}
+
+resource aws_rds_cluster_parameter_group this {
+  name        = "${local.name}-aurora-57-cluster-parameter-group"
+  family      = "aurora-mysql5.7"
+  description = "${local.name}-aurora-57-cluster-parameter-group"
+  tags        = merge(local.common_tags)
+}
